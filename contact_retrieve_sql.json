@@ -1,0 +1,249 @@
+{
+  "name": "contact_retrieve_sql",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=You are a email retrieving assistant. {{ $json.chatInput }} is either a first_name or a last_name. Use the 'Mail_db' tool to output the  email found on the same row, that corresponds to {{ $json.chatInput }}\n\nthe {{ $json.chatInput }} will be in lower case, but the entries in 'Mail_db' start with an upper Case. When searching, always search the corresponding upper case for the first letter of {{ $json.chatInput }}. For example, if {{ $json.chatInput }} is :\n- \"roger\", search \"Roger\"\n- \"simon\", search 'Simon\""
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        220,
+        0
+      ],
+      "id": "a6f44fc2-d478-4868-a376-d9fe3bc42eab",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash-exp",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        160,
+        240
+      ],
+      "id": "cfb5ad21-baf4-43ac-83fd-cfcd3ff238cc",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "Vy842I2Q82eRFl5p",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "contaccts",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "first_name",
+              "condition": "ilike",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Field_Value', ``, 'string') }}"
+            },
+            {
+              "keyName": "last_name",
+              "condition": "ilike",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Field_Value', ``, 'string') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        660,
+        220
+      ],
+      "id": "8fadf311-862b-4221-bf94-e99c321e5324",
+      "name": "Mail_db",
+      "credentials": {
+        "supabaseApi": {
+          "id": "mXJQzMEAqXHvG6up",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "contaccts",
+          "mode": "list",
+          "cachedResultName": "contaccts"
+        },
+        "where": {
+          "values": [
+            {
+              "column": "first_name",
+              "condition": "LIKE",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Value', ``, 'string') }}"
+            },
+            {
+              "column": "last_name",
+              "condition": "LIKE",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Value', ``, 'string') }}"
+            }
+          ]
+        },
+        "combineConditions": "OR",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.5,
+      "position": [
+        560,
+        220
+      ],
+      "id": "6fba8f74-9af7-446c-a4af-e9330cfc823b",
+      "name": "Postgres",
+      "credentials": {
+        "postgres": {
+          "id": "3FAzAXOGFq8GfmVk",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1L3AefMUt9tI7S9D77VzQbjH8bzngRSDO6zKJNDMvNbU",
+          "mode": "list",
+          "cachedResultName": "contaccts",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1L3AefMUt9tI7S9D77VzQbjH8bzngRSDO6zKJNDMvNbU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 290723770,
+          "mode": "list",
+          "cachedResultName": "50-contacts",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1L3AefMUt9tI7S9D77VzQbjH8bzngRSDO6zKJNDMvNbU/edit#gid=290723770"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "first_name",
+              "lookupValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Value', ``, 'string') }}"
+            },
+            {
+              "lookupColumn": "last_name",
+              "lookupValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Value', ``, 'string') }}"
+            }
+          ]
+        },
+        "combineFilters": "OR",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.5,
+      "position": [
+        420,
+        260
+      ],
+      "id": "2251513f-a6dc-4692-9716-d6d13999d902",
+      "name": "Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "viSPX61rJS98or86",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -40,
+        80
+      ],
+      "id": "edbe5127-38c1-4a6f-8685-acbca5cfc177",
+      "name": "When Executed by Another Workflow"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mail_db": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "91c9a4f8-1254-493e-bd47-7df7dc79d51c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5e09ebc4656d54727ee2da84c0a0008b813691b164526ab124d658b531945103"
+  },
+  "id": "wAmSgMQQgUrfYw5k",
+  "tags": []
+}

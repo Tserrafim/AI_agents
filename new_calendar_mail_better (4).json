@@ -1,0 +1,812 @@
+{
+  "name": "new calendar_mail better",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.output }}",
+        "options": {
+          "systemMessage": "=You are a calendar assistant. Use \"get_many\" tool to check if an event already exists at the requested date and hour\n\n\nVERY IMPORTANT : ALWAYS output EventID when it exists \n\nYou have two tools : \n- 'get_many' : to check data availability and **output eventID** (if action is cancel, update, or if there is already an event there)\n- 'Mail_db1' : to retrieve emails from names in {{ $('Information Extractor2').item.json.output.fname }} OR {{ $('Information Extractor2').item.json.output.lname }}\n\nday is given in the format : DD-MM, so 27-03 is March 27th\n\nThere are four different actions : create, cancel, update, and query\n\n- if 'create' : \n\n retrieve mail using  \"Mail_db1\" tool \n\nIf there are no events at that time, say : \"There are no events at that time.\"\nAnd if there is an attendee, add \"Is the email of the attendee <email> ?\" replace <email> with the email retrieved using 'contacts_' \n\nIf there is already an event at that time, propose two other available slots in this format. Make sure those slots are really empty :\n\"There is already an event at that time. I can propose two other empty slots : \n\n      • <date1> <time1>\n      • <date2> <time2>\"\n\nreplace  <date1> <time1> with the day and hour of the slot\nAnd if there is an attendee, add \"Is the email of the attendee <email> ?\" replace <email> with the email retrieved using 'contacts_' \n\nalso, output  attendee's email\n\ncurrent time is {{ $now }}\nTZ is Paris, France\n\nVERY IMPORTANT : Retrieve the EventID when it exists !!!! output it \n\n- if 'cancel' or 'update' : \n retrieve mail using  \"Mail_db1\" tool \nVERY IMPORTANT : Retrieve the EventID when it exists !!!! output it \noutput a different message : \n\"I will cancel/update your event at the desired time. \n                  The event exists at  \n                    • <date1> <time1>\n\n- if 'query' : just return the events asked using 'get_many'. For example : \"what meetings do I have with X in MM ?\" with MM being the month Just return all the events on the time range asked. \n• request {{ $('Information Extractor2').item.json.output.fname }} email to search events booked with that attendee using 'get_many'\n• start search from {{ $json.output.day }}\n• If no year specified, it is the current year.  \n• If no time range is specified, it is the whole month or year queried.\n• Retrieve the corresponding eventsID and output the events (dates)\n\nDo you want me to cancel/update it ?\"\n\n retrieve mail using  \"Mail_db1\" tool \nVERY IMPORTANT : Retrieve the EventID when it exists !!!! output it \n\n1. **IMPORTANT** : You must always get events using the ‘get_many’ tool to make sure there are no scheduling conflicts. \n**when creating or updating an event, ensure the schedule is not taken**. **Not more than 1 event** in the same time slot !!!\n\n\n\n\n2. if event already taken, propose two other free schedules, the same day or coming days. Think carefully and check the availability using 'get_many' as many times as needed. \nAlways formulate the clarification questions in the same way : \n\n• If there is a free slot, output : \n\"There is a free slot for your event\"\nAsk confirmation for the email of the person in {{ $('Telegram Trigger1').item.json.message.text }} and for the query\n\n• if the slot is taken, output : \n\"The slot is not available\", then propose two empty slots between the requested date and 2 days after after checking with 'get_many' tool. **check that the other slots are really available**\n\n- When you are asked to move, update, or delete an event, you must use ‘get_many’ to confirm the event. You must output the event details like date, time, and any attendee emails. \n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        -2380,
+        60
+      ],
+      "id": "5a56381c-7091-4e33-8ea0-d97582c1a97b",
+      "name": "Date_check"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Information Extractor').item.json.output }}",
+        "options": {
+          "systemMessage": "=<overview>\n**DO NOT ASK ANY CONFIRMATION**\n**YOU MUST ALWAYS USE FRENCH ONLY TO WRITE OR RESPOND**\n\n\n**when creating, updating or suppressing an event with an attendee, ALWAYS send an email to the attendee ! If you don't have the mail address yet, use the \"contacts_\" tool with {{ $('Information Extractor2').item.json.output.fname }} . ** IT IS VERY IMPORTANT, NEVER FORGET TO DO IT, A LOT DEPENDS ON IT !!!\n\nYou are a calendar assistant. Your responsabilities include creating, getting, and deleting events in the user’s calendar. Don't EVER ASK follow up questions, just do one of the 'Use' actions below \n</overview>\n\n\n<tools>\n**Calendar Management Tools**\n\n**`Mail_db1`**  \n   - Retrieve emails from:  \n     `{{ $('Information Extractor2').item.json.output.fname }}` (first name)  \n     **OR**  \n    (last name)  \n\n\n**‘create_attendees’** - Use it when an event includes a participant.\nuse the email form 'contacts_'\nand send mail to the attendee \n with the 'Gmail' tool\n\n\nFor all these actions, use the {{ $json.output.eventID }} when needed (update, cancel)\n**‘suppress_event’** - Use it to delete an event. You must use ‘get_many’ first to get the ID of the event to delete or use, and identify it with  {{ $json.output.email }} used to book it. If there is only one this day, go ahead and proceed. If there are more than  one and you need the time of the event, ask for it . When suppressing, output : \"I've canceled the event of <date> at <time>\" and fill in the \"<>\" with the relevant info\nand send mail to the attendee {{ $json.output.email }}\n\n**‘update_event’** - Use it to update an event. You must use ‘get_many’ first to get the ID of the event to update and make sure the new time slot is free, if not stop and say : \"The time slot is not available\" . then change the date, by canceling the prior event and creating a new event with the details requested in {{ $('Telegram Trigger1').item.json.message.text }}\nand send mail to the attendee {{ $json.output.email }} and mention both the former and the newer event day and hour\n\n**'query_event'** : if {{ $json.output.action }} is 'query', use 'get_many' to retrieve **all the matching events. If no dates are specified, consider searching the whole month or year. **\n\nstart from {{ $now }}. OUTPUT ALL THE EVENTS IN THE MESSAGE ITS VERY VERY IMPORTANT !!!\n\n\nWhen looking up for an event with 'get_many' look up an event, make sure to use the attendee email if an attendee name is given by 'get_many'. If you find an event, the output should be : \"I've found one or more events with <attendee>, at <time>\", and fill in the \"<>\" with the relevant info, for <attendee> it is {{ $json.output.email }}\n</tools>\n\n\n<rules>\n## Rules\n\n\n- Turn the incoming query into an action. Do not ask any other question. \n**Ignore clarification questions, just take action based on the intent you receive.** \n\n- If no email address is provided for the attendee, go on with the request, don't ask new questions. \n\n- **If there is an attendee, check once more that you have the correct mail, use 'contacts_\" to verify**\n\n- the output should always be like : \n\" I <booked | updated | canceled> the event \n<title>\n<with attendee> \nat <time> \n<location>\"\nfill in the <> if the relevant info was given, if not just leave a blank\n\n- If there is an attendee email, send them an email with the body of the mail summarizing the event details in a friendly fashion. \nSign the email with \"Sincerely, roro\"\n\n</rules>\n\n\n<timezone>\n## Final notes\nHere is the current date/time : {{ $now }}\nIf a duration for an event isn’t specified, assume it will be one hour. \nIf a query doesn't specify a range of days in a month, assume it is a whole month, if it only specifies a year, assume it is a whole year\n</timezone>"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        220,
+        380
+      ],
+      "id": "2f2bfc97-067e-4435-a35a-4e5aeac00ffc",
+      "name": "calendar_agent1",
+      "executeOnce": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger1').item.json.message.chat.id }}",
+        "text": "={{ $('calendar_agent1').item.json.output }}\nevent ID : {{ $('Edit Fields6').item.json.output.eventID }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        900,
+        380
+      ],
+      "id": "c53dcb8a-956d-4736-a14a-8e7bb21999ff",
+      "name": "Telegram3",
+      "webhookId": "3554d2f4-f71b-465b-8caf-5bd96f4eb913",
+      "credentials": {
+        "telegramApi": {
+          "id": "OmFopREarE55MtI4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c2bf842c-b418-4ad8-86c0-c95b430b82c7",
+              "name": "output",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            },
+            {
+              "id": "57d51fc6-3084-48ab-9328-f705f4581628",
+              "name": "output.eventID",
+              "value": "={{ $('Edit Fields6').item.json.output.eventID }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        660,
+        360
+      ],
+      "id": "d2e77d04-1713-4d8a-9f77-3483e79aa9d6",
+      "name": "Edit Fields3"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -3200,
+        600
+      ],
+      "id": "a273b52f-bedd-4c1f-9859-e5d64a16a995",
+      "name": "Telegram Trigger1",
+      "webhookId": "619b46a2-736d-4dac-b97f-9e94f4c043e0",
+      "credentials": {
+        "telegramApi": {
+          "id": "OmFopREarE55MtI4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash-exp",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -2300,
+        1360
+      ],
+      "id": "12cef0fa-a09e-4931-a71d-8915ca628212",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "Vy842I2Q82eRFl5p",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "rozario1772@gmail.com",
+          "mode": "list",
+          "cachedResultName": "rozario1772@gmail.com"
+        },
+        "returnAll": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Return_All', ``, 'boolean') }}",
+        "timeMin": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('After', ``, 'string') }}",
+        "timeMax": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Before', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        60,
+        1540
+      ],
+      "id": "2b1aadb8-fade-4f5e-bdf9-ef1955878574",
+      "name": "get_many",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "7kFbpMKSLhcGGtIu",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "rozario1772@gmail.com",
+          "mode": "list",
+          "cachedResultName": "rozario1772@gmail.com"
+        },
+        "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start', ``, 'string') }}",
+        "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End', ``, 'string') }}",
+        "additionalFields": {
+          "attendees": [
+            "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Attendees', ``, 'string') }}"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        740,
+        780
+      ],
+      "id": "1fea6851-c32e-4662-96c4-fad873c38aaf",
+      "name": "create_attendees",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "7kFbpMKSLhcGGtIu",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "value": "rozario1772@gmail.com",
+          "mode": "list",
+          "cachedResultName": "rozario1772@gmail.com"
+        },
+        "eventId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Event_ID', ``, 'string') }}",
+        "options": {
+          "sendUpdates": "all"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        600,
+        760
+      ],
+      "id": "d19a56e5-6be6-48ca-a8aa-4cc38c383bbb",
+      "name": "suppress_event",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "7kFbpMKSLhcGGtIu",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('To', ``, 'string') }}",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', ``, 'string') }}",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', ``, 'string') }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        480,
+        780
+      ],
+      "id": "d4050d25-2b5b-442e-b3ae-a3899ee1c585",
+      "name": "Gmail",
+      "webhookId": "c30e6c4f-cf40-418d-ab8e-a1e903e56859",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "PivvTSIHT6iWNPlZ",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "chatId": "={{ $('Telegram Trigger1').item.json.message.chat.id }}",
+        "message": "={{ $json.output }}",
+        "responseType": "freeText",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1340,
+        580
+      ],
+      "id": "d169c7fb-b839-4eea-867d-67656d2ad062",
+      "name": "Telegram2",
+      "webhookId": "f7ae50bd-9635-465d-b13b-1d27f8057484",
+      "credentials": {
+        "telegramApi": {
+          "id": "OmFopREarE55MtI4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "text": "={{ $('Telegram Trigger1').item.json.message.text }}",
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"title\": \"Meeting\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"action\": {\n      \"type\": \"string\",\n      \"description\": \"Action to be taken, either create, cancel, or update.\",\n      \"enum\": [\"create\", \"cancel\", \"update\", \"query\"]\n    },\n    \"fname\": {\n      \"type\": \"string\",\n      \"description\": \"Attendee's first name.\"\n    },\n    \"lname\": {\n      \"type\": \"string\",\n      \"description\": \"Attendee's last name.\"\n    },\n    \"topic\": {\n      \"type\": \"string\",\n      \"description\": \"Topic of the event.\"\n    },\n    \"day\": {\n      \"type\": \"string\",\n      \"description\": \"Day for the event.\",\n      \"pattern\": \"^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])$\"\n  \n    },\n    \"hour\": {\n      \"type\": \"string\",\n      \"description\": \"Hour and minutes of the event.\",\n      \"pattern\": \"^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$\"\n    },\n  \n     \"email\": {\n       \"type\": \"string\",\n    \"description\": \"email of attendee\"\n  }, \n    \"eventID\": {\n      \"type\": \"string\",\n      \"description\": \"eventID or to cancel or look up an event\"\n  }\n  },\n  \"required\": [\"action\", \"day\", \"hour\", \"fname\", \"lastname\", \"email\"],\n  \"additionalProperties\": false\n}",
+        "options": {
+          "systemPromptTemplate": "=You extract and reconstruct data from \n{{ $json.message.text }}\n\n\n\"action\" is ALWAYS the one defined in {{ $('Telegram Trigger1').item.json.message.text }}. NEVER CHANGE IT OR IT WILL BE A BIG MESS !!!!\n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1,
+      "position": [
+        -2840,
+        620
+      ],
+      "id": "39e87c5c-a11b-4605-a054-f73e955aad59",
+      "name": "Information Extractor2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "bd65ac39-008d-4aff-8984-a4de4c5d1eb9",
+              "name": "output",
+              "value": "={{ $('Date_check1').item.json.output }}",
+              "type": "string"
+            },
+            {
+              "id": "010f0285-e8fa-433c-a888-235f42985658",
+              "name": "output.action",
+              "value": "={{ $('Information Extractor2').item.json.output.action }}",
+              "type": "string"
+            },
+            {
+              "id": "186beb17-6f4d-43b0-ad6e-b481bf3a21ac",
+              "name": "output.day",
+              "value": "={{ $json.output.day }}",
+              "type": "string"
+            },
+            {
+              "id": "90af7d14-391f-4bfa-a89b-ed071c12e646",
+              "name": "output.hour",
+              "value": "={{ $('Information Extractor2').item.json.output.hour }}",
+              "type": "string"
+            },
+            {
+              "id": "622c7de7-22bd-4e16-9566-1030f1a846c7",
+              "name": "output.email",
+              "value": "={{ $('Information Extractor').item.json.output.email }}",
+              "type": "string"
+            },
+            {
+              "id": "53671b3f-dd10-41f6-aaea-6f834bba885b",
+              "name": "output.eventID",
+              "value": "={{ $json.output.eventID }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -540,
+        600
+      ],
+      "id": "ff75719c-9dac-4d39-98da-5fb51aadc316",
+      "name": "Edit Fields6"
+    },
+    {
+      "parameters": {
+        "name": "mail_db",
+        "description": "=Call this tool to retrieve mails using the query ",
+        "workflowId": {
+          "__rl": true,
+          "value": "wAmSgMQQgUrfYw5k",
+          "mode": "list",
+          "cachedResultName": "contact_retrieve_sql"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        0,
+        660
+      ],
+      "id": "95bee714-73ff-4454-af95-680091860c3a",
+      "name": "Emails_get"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "contaccts",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "first_name",
+              "condition": "ilike",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Field_Value', ``, 'string') }}"
+            },
+            {
+              "keyName": "last_name",
+              "condition": "ilike",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Field_Value', ``, 'string') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        -1980,
+        940
+      ],
+      "id": "44fa6b1e-5aa3-4db1-a3be-e8abeb71baa8",
+      "name": "Mail_db1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "mXJQzMEAqXHvG6up",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "bd65ac39-008d-4aff-8984-a4de4c5d1eb9",
+              "name": "output",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            },
+            {
+              "id": "010f0285-e8fa-433c-a888-235f42985658",
+              "name": "output.action",
+              "value": "={{ $('Information Extractor2').item.json.output.action }}",
+              "type": "string"
+            },
+            {
+              "id": "186beb17-6f4d-43b0-ad6e-b481bf3a21ac",
+              "name": "output.day",
+              "value": "={{ $('Information Extractor2').item.json.output.day }}",
+              "type": "string"
+            },
+            {
+              "id": "90af7d14-391f-4bfa-a89b-ed071c12e646",
+              "name": "output.hour",
+              "value": "={{ $('Information Extractor2').item.json.output.hour }}",
+              "type": "string"
+            },
+            {
+              "id": "622c7de7-22bd-4e16-9566-1030f1a846c7",
+              "name": "output.email",
+              "value": "={{ $json.output.email }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2460,
+        620
+      ],
+      "id": "7a25ec50-c90a-4e35-b71b-3fcaf6c7a528",
+      "name": "Edit Fields7"
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.data.text }}{{ $('Date_check1').item.json.output }}{{ $('Information Extractor2').item.json.output }}",
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"title\": \"Meeting\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"action\": {\n      \"type\": \"string\",\n      \"description\": \"Action to be taken, either create, cancel, or update.\",\n      \"enum\": [\"create\", \"cancel\", \"update\", \"query\"]\n    },\n    \"fname\": {\n      \"type\": \"string\",\n      \"description\": \"Attendee's first name.\"\n    },\n    \"lname\": {\n      \"type\": \"string\",\n      \"description\": \"Attendee's last name.\"\n    },\n    \"topic\": {\n      \"type\": \"string\",\n      \"description\": \"Topic of the event.\"\n    },\n    \"day\": {\n      \"type\": \"string\",\n      \"description\": \"Day for the event.\",\n      \"pattern\": \"^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])$\"\n  \n    },\n    \"hour\": {\n      \"type\": \"string\",\n      \"description\": \"Hour and minutes of the event.\",\n      \"pattern\": \"^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$\"\n    },\n  \n     \"email\": {\n       \"type\": \"string\",\n    \"description\": \"email of attendee\"\n  }, \n    \"eventID\": {\n      \"type\": \"string\",\n      \"description\": \"eventID or to cancel or look up an event\"\n  }\n  },\n  \"required\": [\"action\", \"day\", \"hour\", \"fname\", \"lastname\", \"email\"],\n  \"additionalProperties\": false\n}",
+        "options": {
+          "systemPromptTemplate": "=You extract and reconstruct data from \n{{ $json.message.text }}\n\n\n\"action\" is ALWAYS the one defined in {{ $('Telegram Trigger1').item.json.message.text }}. NEVER CHANGE IT OR IT WILL BE A BIG MESS !!!!\n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1,
+      "position": [
+        -1040,
+        560
+      ],
+      "id": "20029844-4a6f-4533-83bd-a33e449621c7",
+      "name": "Information Extractor"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f79980c8-e8b3-4bb9-a04b-f4b488174009",
+              "name": "output",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1700,
+        580
+      ],
+      "id": "b1882aff-4c35-4093-a5c6-13e62e4c46d0",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.output }}",
+        "options": {
+          "systemMessage": "=\n\n**Calendar Assistant Prompt v2**  \n**Role**: Intelligent Calendar Manager with Conflict Resolution  \n\n---\n\n### **CORE OBJECTIVES**  \n1. **Prevent scheduling conflicts** using `get_many` tool for all actions  \n2. **Always output EventID** when events exist  \n3. **Retrieve emails** dynamically using `Mail_db1` tool  \n4. **Strict time format**: DD-MM (e.g., 27-03 = March 27th)  \n5. **Timezone**: Paris/France ({{ $now }})  \n\n---\n\n### **TOOLS**  \n1. **`get_many`**  \n   - Check event existence/availability  \n   - **MUST return EventID** for existing events  \n   - Verify slots *before* confirming actions  \n\n2. **`Mail_db1`**  \n   - Retrieve emails from:  \n     `{{ $('Information Extractor2').item.json.output.fname }}` (first name)  \n     **OR**  \n     `{{ $('Information Extractor2').item.json.output.lname }}` (last name)  \n\n---\n\n### **ACTIONS & WORKFLOWS**  \n\n#### **1. CREATE Event**  \n**Steps**:  \n1. Use `get_many` → Check slot availability  \n2. If **no conflict**:  \n   - \"There are no events at that time.\"  \n   - **Add attendee check**:  \n     *\"Is the email of the attendee [EMAIL]?\"* (use `Mail_db1`)  \n3. If **conflict exists**:  \n   - \"There is already an event at [TIME]. I propose two free slots:\"  \n     ```  \n     • [DD-MM HH:MM] (EventID: [ID] if applicable)  \n     • [DD-MM HH:MM]  \n     ```  \n   - **Verify slots** with `get_many` before proposing  \n\n---\n\n#### **2. CANCEL/UPDATE Event**  \n**Steps**:  \n1. Use `get_many` → Confirm event exists (with EventID)  \n2. Standard response:  \n   ```  \n   \"I will [cancel/update] your event.  \n   Confirmed event:  \n   • [DD-MM HH:MM] (EventID: [ID])\"  \n   ```  \n3. Retrieve attendee email via `Mail_db1`  \n\n---\n\n#### **3. QUERY Events**  \n**Rules**:  \n- Use `get_many` with:  \n  - Attendee email (from `Mail_db1`)  \n  - use Attendee email to query matching eventID in get_many\n  - Date range:  \n    - Default to current year if unspecified  \n    - Whole month if no time range given  \n**Response format**:  \n```  \n\"Events with [EMAIL] in [MM/YYYY]:  \n• [DD-MM HH:MM] (EventID: [ID])  \n• [DD-MM HH:MM] (EventID: [ID])\"  \n\n```  \n\n---\n\n### **CRITICAL RULES**  \n⚠️ **MUST**:  \n- Check **ALL** actions with `get_many` first  \n- **Never allow >1 event** per time slot  \n- For conflicts, propose **verified alternatives** within 2 days  \n- **Always follow response templates** (no creative formatting)  \n-  retrieve mail using  \"Mail_db1\" tool \n**VERY IMPORTANT** : Retrieve the EventID when it exists !!!! output it \n\n---\n\n### **EXAMPLE SCENARIOS**  \n**Input**: \"Create meeting with John on 27-03 at 15:00\"  \n**Process**:  \n1. `get_many` → Conflict found (EventID: ABC123)  \n2. `Mail_db1` → john@company.com  \n**Response**:  \n```  \n\"There is already an event at 27-03 15:00 (EventID: ABC123).  \nAvailable slots:  \n• 27-03 16:00  \n• 28-03 10:00  \nIs the attendee email john@company.com?\"  \n```  \n\n---\n\n**Formatting Guide**:  \n- Dates/times: **Bold** when referencing conflicts  \n- EventIDs: `Monospace font`  \n- Slot proposals: Bullet points with exact times  \n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        -2120,
+        620
+      ],
+      "id": "d39ae9e4-706d-4682-8522-cb47db795b0c",
+      "name": "Date_check1"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash-exp",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -2580,
+        80
+      ],
+      "id": "aa155ff5-4357-47fe-b2e5-6dc905f6464f",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "Vy842I2Q82eRFl5p",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger1').item.json.message.chat.id }}",
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -1380,
+        1260
+      ],
+      "id": "726a7ec1-8464-44de-b9f7-0b86d90d0d8b",
+      "name": "Window Buffer Memory"
+    }
+  ],
+  "pinData": {
+    "Telegram Trigger1": [
+      {
+        "json": {
+          "update_id": 977020190,
+          "message": {
+            "message_id": 1484,
+            "from": {
+              "id": 690802282,
+              "is_bot": false,
+              "first_name": "A",
+              "last_name": "1",
+              "language_code": "fr"
+            },
+            "chat": {
+              "id": 690802282,
+              "first_name": "A",
+              "last_name": "1",
+              "type": "private"
+            },
+            "date": 1742167039,
+            "text": "quels rdv avec solange en mars ? "
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Date_check": {
+      "main": [
+        []
+      ]
+    },
+    "calendar_agent1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields3": {
+      "main": [
+        [
+          {
+            "node": "Telegram3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Information Extractor2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "calendar_agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Information Extractor2",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Date_check1",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Information Extractor",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_many": {
+      "ai_tool": [
+        [
+          {
+            "node": "calendar_agent1",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Date_check1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_attendees": {
+      "ai_tool": [
+        [
+          {
+            "node": "calendar_agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "suppress_event": {
+      "ai_tool": [
+        [
+          {
+            "node": "calendar_agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail": {
+      "ai_tool": [
+        [
+          {
+            "node": "calendar_agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram2": {
+      "main": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields6": {
+      "main": [
+        [
+          {
+            "node": "calendar_agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Information Extractor2": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Emails_get": {
+      "ai_tool": [
+        []
+      ]
+    },
+    "Mail_db1": {
+      "ai_tool": [
+        [
+          {
+            "node": "Date_check1",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "calendar_agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields7": {
+      "main": [
+        [
+          {
+            "node": "Date_check1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Information Extractor": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Telegram2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "Date_check1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "timezone": "Europe/Paris"
+  },
+  "versionId": "3d510df3-b7b1-402a-8f2a-298a1ceea4f1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5e09ebc4656d54727ee2da84c0a0008b813691b164526ab124d658b531945103"
+  },
+  "id": "SK5rVbZeo5Lk1T3o",
+  "tags": []
+}

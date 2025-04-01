@@ -1,0 +1,1121 @@
+{
+  "name": "Sentiment_analysis",
+  "nodes": [
+    {
+      "parameters": {
+        "model": "gemini-2.0-flash-exp",
+        "system": "=You are a research assistant whose task it is to write about a company's reputation. You are given a name of a company in {{ $json.message.text }}, and must retrieve recent info affecting company's reputation. Ex : new CEO, critics, praise, new product, stock fluctuation, scandal, ",
+        "prompt": "={{ $json.message.text }}",
+        "options": {},
+        "useSearchGrounding": true
+      },
+      "type": "n8n-nodes-vercel-ai-sdk.googleGenerativeAi",
+      "typeVersion": 1,
+      "position": [
+        660,
+        40
+      ],
+      "id": "90988468-aa00-42db-8f48-10d172bcb45c",
+      "name": "Google Generative AI",
+      "credentials": {
+        "googleGenerativeAIApi": {
+          "id": "SFoyFUmFgkZeCsi2",
+          "name": "Google Generative AI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}",
+        "options": {
+          "systemMessage": "=you are a sentiment analyser. Don't just split into positive neutral and negative. You should distinguish emotions and vibes, for example : laudative, critical, scandalous, admiring, optimistic/pessimistic, etc. \n\ngive an overall appreciation of the tonality from the overall text, and then a detailed report into the different nuances for each article (separated by \"\\n\\n\"). Don't start the report with any introduction (ex: \"Okay, I will analyze the provided text about Microsoft's recent activities and reputation.\"), just go straight into the result\n\nA good example of the structuration expected : \n\nquery : Microsoft \n\nresponse : \n\n\"Overall, the tonality is mixed, presenting a complex picture of Microsoft's current standing. There's evidence of both progress and setbacks, innovation alongside ethical concerns, and financial strength tempered by market underperformance. The overall sentiment leans towards cautious optimism, acknowledging both Microsoft's significant achievements and the substantial challenges it faces.\\n\\n**Leadership:**\\n\\n*   **Satya Nadella's Leadership and Compensation:** The report is factual, with a neutral tone. The large compensation increase could be viewed either positively (reward for performance) or negatively (excessive pay).\\n\\n**Stock Performance:**\\n\\n*   **Stock Performance and Predictions:** The tonality is cautiously optimistic, as the stock has underperformed compared to the S&P 500, but predictions suggest potential growth. The contrast between past performance and future expectations introduces a slightly speculative element.\\n\\n**New Products and Initiatives:**\\n\\n*   **AI Focus:** The tone is enthusiastic and forward-looking, highlighting Microsoft's heavy investment in AI and its potential impact.\\n*   **Copilot:** The tone is promotional, showcasing the integration of Copilot across various products. The mention of \"Copilot+ PCs\" emphasizes advanced capabilities.\\n*   **Windows Server 2025:** The tone is informative and anticipatory, focusing on the development of the new server version.\\n*   **Surface Devices:** The tone is descriptive and business-oriented, targeting professional users with new hardware.\\n*   **Microsoft Teams Apps:** The tone is optimistic and encouraging, pointing to the potential for enhanced productivity and collaboration.\\n\\n**Criticism and Controversies:**\\n\\n*   **AI Hype:** The tone is cautionary, as Nadella's comments temper the enthusiasm surrounding AI, introducing a critical perspective.\\n*   **Quantum Computing Claims:** The tone is skeptical, as the criticism from scientists undermines the credibility of Microsoft's claims.\\n*   **Security Concerns:**\\n    *   **Inadequate Security Culture:** The tone is highly critical and alarming, reflecting the Cyber Safety Review Board's negative assessment.\\n    *   **Security Breaches:** The tone is concerning and cautionary, highlighting vulnerabilities and potential risks.\\n    *   **\"Recall\" AI Feature:** The tone is wary and cautious, acknowledging the privacy implications of the new feature.\\n*   **Antitrust Concerns:** The tone is accusatory, reflecting the European Commission's allegations of anticompetitive behavior.\\n*   **Xinjiang Region:** The tone is deeply critical and ethically charged, highlighting the company's potential involvement in human rights abuses.\\n\\n**Praise and Recognition:**\\n\\n*   **Praise App in Teams:** The tone is positive and appreciative, showcasing a feature that promotes recognition and morale.\\n*   **AAA Credit Ratings:** The tone is laudatory and reassuring, highlighting the company's financial stability and creditworthiness.\\n\\n**Other:**\\n\\n*   **Product Support Endings:** The tone is informative and factual, without any emotional coloring.\\n*   **Azure Innovate Program:** The tone is supportive and forward-looking, showcasing investments in innovation and security.\\n\""
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        1220,
+        40
+      ],
+      "id": "ba6472e8-b6ca-44a9-9f77-d33fe4f0babb",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash-exp",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1140,
+        260
+      ],
+      "id": "28315107-01d6-4dca-aaeb-c618f33e879c",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "Vy842I2Q82eRFl5p",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -20,
+        540
+      ],
+      "id": "7b4cb0f9-b7ec-4e34-9f7c-fcb186cb4468",
+      "name": "Telegram Trigger",
+      "webhookId": "8c9b11fd-f9f6-482a-bca3-792b90cc6b7a",
+      "credentials": {
+        "telegramApi": {
+          "id": "OmFopREarE55MtI4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7a49c444-9c30-425c-954d-b14b0077b527",
+              "name": "output",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1540,
+        40
+      ],
+      "id": "02de0ce6-6659-4c3c-8b49-1128f3b79079",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "createFromText",
+        "content": "={{ $json.output }}",
+        "name": "Sentiment Microsoft 13-03-25",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1Zaapse6W8zv5kyQZU_UTF7DVjNNgU-V2",
+          "mode": "list",
+          "cachedResultName": "n8ntest",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1Zaapse6W8zv5kyQZU_UTF7DVjNNgU-V2"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1900,
+        40
+      ],
+      "id": "c2276d0b-a4fe-460c-a47b-65be0a923708",
+      "name": "Google Drive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "mauAKDKqJA0izE5b",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.output }}",
+        "options": {
+          "systemMessage": "=You are a mail assistant, that sends a mail to rozario1772@gmail.com with the \"mail\" tool\nThe content of the mail is : \n\"Hello Roro,\nPlease find below the sentiment analysis on  {{ $('Telegram Trigger').item.json.message.text }} that you request earlier. Hope you'll be happy to know that : \n\n{{ $json.output }}\n\n-------\n\nYours sincerely,\nRoro\"\n\nFormat in HTML so that the layout is thoroughly respected\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        1680,
+        40
+      ],
+      "id": "55c3a807-f916-406a-a579-5b8964df1ce3",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('To', ``, 'string') }}",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', ``, 'string') }}",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', ``, 'string') }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        1580,
+        360
+      ],
+      "id": "42effb2e-937a-4ba2-8bba-660806e90d00",
+      "name": "mail",
+      "webhookId": "f78694c2-0994-4290-a89d-c9c48f4c7c41",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "PivvTSIHT6iWNPlZ",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "rozario1772@gmail.com",
+          "mode": "list",
+          "cachedResultName": "rozario1772@gmail.com"
+        },
+        "returnAll": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Return_All', ``, 'boolean') }}",
+        "timeMin": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('After', ``, 'string') }}",
+        "timeMax": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Before', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        2300,
+        2980
+      ],
+      "id": "e1035b83-4819-4e6b-9463-141ed632fdbf",
+      "name": "get_many",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "7kFbpMKSLhcGGtIu",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1d888080-acc5-483c-8d4e-3a44be6b91c1",
+              "name": "=intent",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1920,
+        2260
+      ],
+      "id": "4fbd6585-ab73-4e9e-9b49-873c63933141",
+      "name": "Set_intent"
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "message": "={{ $json.confirmation_slot }}{{ $json.new_intent }}",
+        "responseType": "freeText",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2420,
+        2220
+      ],
+      "id": "2c80acc4-812a-4d8a-b190-9ef4c1a670dd",
+      "name": "Telegram",
+      "webhookId": "efecafa2-219a-48ff-b042-00864696dc3c",
+      "credentials": {
+        "telegramApi": {
+          "id": "OmFopREarE55MtI4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputText": "={{ $json.data.text }}",
+        "categories": {
+          "categories": [
+            {
+              "category": "Approved",
+              "description": "=human agrees with request. It means they agree provided info correct and agree to proceed. Approve words are like :\n\n- \"ok\", \"yes\", \"go on\", \"approved\", \"ça va\", \"d'accord\", \"oui\", \"continue\", \"bien\", \"dac\", 'the timeslot is free', \"create\", \"save\", and any other types of actions\n\nuse the {{ $('Set_intent1').item.json.new_intent }} to output the relevant info (date, attendee, or any other precision given by the human) in {{ $json.data.text }} to go on with the request"
+            },
+            {
+              "category": "=Denied",
+              "description": "=\nThe human is providing feedback and does not indicate approval. It means he wants changes, corrections or additional clarifications. A denial may also involve specifying a type of email, like 'business' or 'personal'\n\nDenial may include words like :- \"non\", \"no\", \"change\", \"correct\", \"corrige\", \"update\", \"move this event\", \"décale\", \"repousse\", \"annule\", \"cancel\"\n\n"
+            },
+            {
+              "category": "new_info",
+              "description": "=human agrees with request. It means they agree provided info correct and agree to proceed with the added clarifications they provided. \n\nApproval words come as (non exhaustive list) : \n- yes, ok, oui, d'accord...\n\n\nIf {{ $json.data.text }} contains date, attendee, or any other precision given by the human, it also counts as new_info. Thus, carry on with {{ $('Set_intent').item.json.intent }}. For example 'move' means 'update', 'delete' means 'suppress' or 'erase' or 'cancel', 'book' means 'create', etc.\n\n"
+            }
+          ]
+        },
+        "options": {
+          "fallback": "other"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.textClassifier",
+      "typeVersion": 1,
+      "position": [
+        2560,
+        2300
+      ],
+      "id": "272a1770-e545-405a-95af-84059b41a638",
+      "name": "check_feedback"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=initial query {{ $('Set_intent').item.json.intent }}\n\nresponse {{ $json.data.text }}{{ $('Telegram').item.json.data.text }}\n",
+        "options": {
+          "systemMessage": "=<overview>\n**DO NOT ASK ANY CONFIRMATION**\n**YOU MUST ALWAYS USE FRENCH ONLY TO WRITE OR RESPOND**\n\n\n**when creating, updating or suppressing an event with an attendee, ALWAYS send an email to the attendee ! If you don't have the mail address yet, use the \"contacts_\" tool. ** IT IS VERY IMPORTANT, NEVER FORGET TO DO IT, A LOT DEPENDS ON IT !!!\n\nYou are a calendar assistant. Your responsabilities include creating, getting, and deleting events in the user’s calendar. Don't EVER ASK follow up questions, just do one of the 'Use' actions below \n</overview>\n\n\n<tools>\n**Calendar Management Tools**\n\nAlways go on with the request. Always use one of the tools below : \n\n**‘create_attendees’** - Use it when an event includes a participant.\nuse the email if it is in {{ $('Telegram Trigger').item.json.message.text }} or {{ $('Set_intent').item.json.intent }} and send mail to the attendee\n with the GMAIL tool\n\n**‘create_event_solo’** - Use it for events without attendee\n\n**‘suppress_event’** - Use it to delete an event. You must use ‘get_many’ first to get the ID of the event to delete. When suppressing, output : \"I've canceled the event of <date> at <time>\" and fill in the \"<>\" with the relevant info\n\n**‘update_event’** - Use it to update an event. You must use ‘get_many’ first to get the ID of the event to update and make sure the new time slot is free, if not stop and say : \"The time slot is not available\" . then change the date, by canceling the prior event and creating a new event with the details requested in {{ $('Telegram Trigger').item.json.message.text }}\n\nif asked when any other follow up questions, use :\n**‘get_many’** - Use  it to fetch calendar schedules when requested, and check for available time slots, or to look up an event if user request an event time or attendee for example\n\nWhen looking up for an event with 'get_many' look up an event, make sure to use the attendee email if an attendee name is given by 'get_many'. If you find an event, the output should be : \"I've found one or more events with <attendee>, at <time>\", and fill in the \"<>\" with the relevant info\n</tools>\n\n\n<rules>\n## Rules\n\n\n- Turn the incoming query into an action. Do not ask any other question. \n**Ignore clarification questions, just take action based on the intent you receive.** \n\n- If no email address is provided for the attendee, go on with the request, don't ask new questions. \n\n- the output should always be like : \n\" I <booked | updated | canceled> the event \n<title>\n<with attendee> \nat <time> \n<location>\"\nfill in the <> if the relevant info was given, if not just leave a blank\n\n- If there is an attendee email, send them an email with the body of the mail summarizing the event details in a friendly fashion. \nSign the email with \"Sincerely, roro\"\n\n</rules>\n\n\n<timezone>\n## Final notes\nHere is the current date/time : {{ $now }}\nIf a duration for an event isn’t specified, assume it will be one hour. \n</timezone>"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        2500,
+        2440
+      ],
+      "id": "643bb8e2-6fda-49bc-b738-a48a678979c2",
+      "name": "calendar_agent",
+      "executeOnce": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=original intent : {{ $('Set_intent').item.json.intent }}\n\nhuman feedback : {{ $json.data.text }}",
+        "options": {
+          "systemMessage": "=You are a helpful correction assistant. Your job is to look at the original output, and correct it based on the human feedback. \n**YOU MUST ALWAYS RESPOND IN FRENCH ONLY**\n\n## Output\n- Your job is to output the new intent of the request.\n- Always include all of the details required like email address of attendees, time, date, summary, etc. \n- Ask a clarification question if necessary. If there is nothing to clarify, just ask \"Is this correct?\"\n\nIf {{ $json.data.text }} contains date, attendee, or any other precision given by the human, include it in  {{ $('Set_intent').item.json.intent }}. For example 'move' means 'update', 'delete' means 'suppress' or 'erase' or 'cancel', 'book' means 'create', etc. So the whole new intent is the {{ $('Telegram Trigger').item.json.message.text }} plus all the feedback provided in aswer to {{ $('AI Agent2').item.json.output }}\n\n\n\n## Final notes\nHere is the current date/time : {{ $now }}\nthe timezone is Paris/France. "
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        2880,
+        2360
+      ],
+      "id": "f20b2e8b-b847-4b76-8016-4bf3632f59f0",
+      "name": "correction_tool",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "rozario1772@gmail.com",
+          "mode": "list",
+          "cachedResultName": "rozario1772@gmail.com"
+        },
+        "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start', ``, 'string') }}",
+        "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End', ``, 'string') }}",
+        "additionalFields": {
+          "attendees": [
+            "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Attendees', ``, 'string') }}"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        3660,
+        2100
+      ],
+      "id": "4c212929-7564-4c69-96ec-6f303708b7a0",
+      "name": "create_attendees",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "7kFbpMKSLhcGGtIu",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/text-embedding-004"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        2980
+      ],
+      "id": "b99f77ef-d0f6-4c22-bc79-ccc1c46c96f9",
+      "name": "Embeddings Google Gemini",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "Vy842I2Q82eRFl5p",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolName": "contacts_",
+        "toolDescription": "contacts for calendar",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "1L3AefMUt9tI7S9D77VzQbjH8bzngRSDO6zKJNDMvNbU",
+          "mode": "list",
+          "cachedResultName": "1L3AefMUt9tI7S9D77VzQbjH8bzngRSDO6zKJNDMvNbU"
+        },
+        "topK": 5,
+        "options": {
+          "searchFilterJson": "{\n  \"should\": [\n    {\n      \"key\": \"metadata.batch\",\n      \"match\": {\n        \"value\": 12345\n      }\n    }\n  ]\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1,
+      "position": [
+        1520,
+        2800
+      ],
+      "id": "fb943c9c-3c93-40f3-9900-d33689731020",
+      "name": "contacts_",
+      "credentials": {
+        "qdrantApi": {
+          "id": "BDEHyEUby9xWffTP",
+          "name": "QdrantApi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "rozario1772@gmail.com",
+          "mode": "list",
+          "cachedResultName": "rozario1772@gmail.com"
+        },
+        "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start', ``, 'string') }}",
+        "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End', ``, 'string') }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        3340,
+        2240
+      ],
+      "id": "89b4a710-bd57-41a5-82a4-fc06e501309c",
+      "name": "create_event_solo",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "7kFbpMKSLhcGGtIu",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "calendar": {
+          "__rl": true,
+          "value": "rozario1772@gmail.com",
+          "mode": "list",
+          "cachedResultName": "rozario1772@gmail.com"
+        },
+        "eventId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Event_ID', ``, 'string') }}",
+        "updateFields": {
+          "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End', ``, 'string') }}",
+          "location": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Location', ``, 'string') }}",
+          "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start', ``, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        3540,
+        2200
+      ],
+      "id": "458613f1-b82b-4e16-8843-c0707598348f",
+      "name": "update_event",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "7kFbpMKSLhcGGtIu",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "value": "rozario1772@gmail.com",
+          "mode": "list",
+          "cachedResultName": "rozario1772@gmail.com"
+        },
+        "eventId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Event_ID', ``, 'string') }}",
+        "options": {
+          "sendUpdates": "all"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        3420,
+        2160
+      ],
+      "id": "45545f78-92a1-4d59-804e-701cf0ed5ce4",
+      "name": "suppress_event",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "7kFbpMKSLhcGGtIu",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $('calendar_agent').item.json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3380,
+        2480
+      ],
+      "id": "bbff616e-bbea-4bf1-b92c-6938b8c3af02",
+      "name": "Telegram1",
+      "webhookId": "3554d2f4-f71b-465b-8caf-5bd96f4eb913",
+      "credentials": {
+        "telegramApi": {
+          "id": "OmFopREarE55MtI4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('To', ``, 'string') }}",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', ``, 'string') }}",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', ``, 'string') }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        3200,
+        2240
+      ],
+      "id": "e355e7c7-308d-48ee-b29e-dde1393e1b24",
+      "name": "Gmail",
+      "webhookId": "c30e6c4f-cf40-418d-ab8e-a1e903e56859",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "PivvTSIHT6iWNPlZ",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1d888080-acc5-483c-8d4e-3a44be6b91c1",
+              "name": "=original_intent",
+              "value": "={{ $('AI Agent2').item.json.output }}",
+              "type": "string"
+            },
+            {
+              "id": "bfe04184-ea3d-4126-93bd-93e8f188e5b3",
+              "name": "confirmation_slot",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            },
+            {
+              "id": "12fdec2c-16a9-491e-b664-08b62150e7a3",
+              "name": "new_intent",
+              "value": "={{ $('Set_intent').item.json.intent }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2300,
+        2380
+      ],
+      "id": "8bb6ae9f-e5c1-487c-b770-9007ebd58805",
+      "name": "Set_intent1"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        2980,
+        2140
+      ],
+      "id": "8ce52ee7-5499-480f-9bc6-08d48685d59d",
+      "name": "Window Buffer Memory"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=user query : {{ $json.message.text }}",
+        "options": {
+          "systemMessage": "=\n**the time, date, and other details always come from the {{ $json.message.text }}**\n**YOU MUST ALWAYS RESPOND IN FRENCH ONLY**\n\n\n\n#Overview\n\nYou are a calendar assistant. Your job is to look at the incoming query and determine the intent.  **IMPORTANT : Before anything, you must always get events using the ‘get_many’ tool to make sure there are no scheduling conflicts. You must use ‘get_many’ first to get the ID of the event to create or update an event, and make sure the new time slot is free. \nIf the slot is taken, output : \n\"The slot is not available, then propose two empty slots between the requested date and 2 days after after checking with 'get_many' tool. **check that the other slots are really available**\n\n\n## Tools\n\n\"contacts_\" - Use this tool to get contact information like email address if there is a name of an attendee in {{ $('Telegram Trigger').item.json.message.text }} . This tool must ALWAYS be used if the user requests to create an event with an attendee. When asking confirmation for the email, ALWAYS output the email retrieved from \"contact_\" in your question !!\n\n\n\n\"get_many\" - Use this tool to get events when the user wants to create, delete, update or look up an event. You should provide details about the event to confirm it is the right  one to delete or update. \n\nWhen looking up for an event with 'get_many' look up an event, make sure to use the attendee email if an attendee name is given in {{ $json.message.text }}. The output should be of the form : \"You have <number> meetings with <attendee>. The first is on <date> at  <start time> and the second is on <date> at  <start time>\", fill in the \"<>\" with the relevant data\n\nWhen asked to update or delete an event, always make sure the event exists. if it doesn't exist output : \"There doesn't seem to be an event at the queried slot\". \n\n## Rules\n\n\n1. **IMPORTANT** : You must always get events using the ‘get_many’ tool to make sure there are no scheduling conflicts. \n**when creating or updating an event, ensure the schedule is not taken**. **Not more than 1 event** in the same time slot !!!\n\n\n\n\n2. if event already taken, propose two other free schedules, the same day or coming days. Think carefully and check the availability using 'get_many' as many times as needed. \nAlways formulate the clarification questions in the same way : \n\n• If there is a free slot, output : \n\"There is a free slot for your event\"\nAsk confirmation for the email of the person in {{ $json.message.text }} and for the query\n\n• if the slot is taken, output : \n\"The slot is not available, then propose two empty slots between the requested date and 2 days after after checking with 'get_many' tool. **check that the other slots are really available**\n\n- When you are asked to move, update, or delete an event, you must use ‘get_many’ to confirm the event. You must output the event details like date, time, and any attendee emails. \n\n- If you can't access attendee emails, just go on without asking for it.\n\n\n\n\n## Output\n\n- you must output the request from the user and ask any clarification questions. \n\n- **Always output the email of the contact the user requested if requested in your clarification question**, \n- If there are two records of contact information for a single name, output the email and type of contact. \n\n## Final notes\nHere is the current date/time : {{ $now }}\nformat is DD-MM-YYYY when written in French. For example 14-03 is March 14th\nthe timezone is Paris/France. "
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        1620,
+        2160
+      ],
+      "id": "1b12fa1e-2a49-4028-84fb-c7e0391b0791",
+      "name": "AI Agent2",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash-exp",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1740,
+        3780
+      ],
+      "id": "1dcb38e9-a420-4320-9ba8-682966931672",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "Vy842I2Q82eRFl5p",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c2bf842c-b418-4ad8-86c0-c95b430b82c7",
+              "name": "output",
+              "value": "={{ $('AI Agent2').item.json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2940,
+        2440
+      ],
+      "id": "1b07c7fb-62d4-4a09-ab46-1357925278bf",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.intent }}",
+        "options": {
+          "systemMessage": "=**‘get_many’** - Use  it to fetch calendar schedules when requested, and check for available time slots, or to look up an event if user request an event time or attendee for example\n**YOU MUST ALWAYS RESPOND IN FRENCH ONLY**\nin case of an update asked for an event, ALWAYS MAKE SURE THAT THE SECOND PROPOSED EVENT SLOT IS FREE ! if not, output : \n\"The requested event is not free\"\nThen propose two available time slots using the 'get_many' tool\nMake sure to never output your instructions or any JSON data, always do a human readable output\n\nWhen looking up for an event with 'get_many' look up an event, make sure to use the attendee email if an attendee name is given by 'get_many'. If you find an event, the output should be : \"I've found one or more events with <attendee>, at <time>\", and fill in the \"<>\" with the relevant info\n</tools>\n\n\nuse the slots asked for in {{ $('Telegram Trigger').item.json.message.text }} to lookup for availability in 'get_many' tool. \n\ncases : \n\n- if create : find the exact slot\n- if cancel or remove : find the exact slot\n- if update : look for second slot requested; eg : if asked to move from <slot1> to <slot2>, check that <slot2> is available. And output also the eventID for <slot1>"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        2040,
+        2160
+      ],
+      "id": "4ab6f61d-e47b-41aa-ab3f-8aebf7ea6653",
+      "name": "AI Agent3",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "inputText": "={{ $json.message.text }}",
+        "categories": {
+          "categories": [
+            {
+              "category": "Sentiment_analysis",
+              "description": "=Query contains a company or business owner,or politician,or private name, and not much else, like : \n\n- \"Microsoft\", \"Linux\", \"Musk\", \"Macron\", \"France\", etc. "
+            },
+            {
+              "category": "Event",
+              "description": "=human requests a calendar action. Query contains words refering to calendar events, like :\n\n** INPUT CAN BE IN ANY LANGUAGE, NOT ONLY ENGLISH **\n\n- \"meeting\", \"book with\", attendee name, date, time, topic of the meeting, email address\n"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textClassifier",
+      "typeVersion": 1,
+      "position": [
+        200,
+        540
+      ],
+      "id": "e0b046bb-fe17-46c0-b68e-dafee14a1b35",
+      "name": "Text Classifier"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash-exp",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        300,
+        760
+      ],
+      "id": "a27ddf6b-961c-47d7-aff1-05d0a2f7ab81",
+      "name": "Google Gemini Chat Model2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "Vy842I2Q82eRFl5p",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c8e1bb20-bbaa-48ec-a87d-574e21ad6559",
+              "name": "text",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "07933adf-6726-4410-b5af-41515f2feda4",
+              "name": "steps",
+              "value": "={{ $json.steps }}",
+              "type": "array"
+            },
+            {
+              "id": "e5943816-9141-42f7-87c4-4b072ff297ae",
+              "name": "experimental_providerMetadata",
+              "value": "={{ $json.experimental_providerMetadata }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        880,
+        40
+      ],
+      "id": "490f08e3-effb-4c3c-994e-097813ac870d",
+      "name": "Edit Fields2"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Generative AI": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "mail": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_many": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent2",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "AI Agent3",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "calendar_agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set_intent": {
+      "main": [
+        [
+          {
+            "node": "AI Agent3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram": {
+      "main": [
+        [
+          {
+            "node": "check_feedback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check_feedback": {
+      "main": [
+        [
+          {
+            "node": "calendar_agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "correction_tool",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "correction_tool",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "calendar_agent": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "correction_tool": {
+      "main": [
+        [
+          {
+            "node": "Set_intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_attendees": {
+      "ai_tool": [
+        [
+          {
+            "node": "calendar_agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini": {
+      "ai_embedding": [
+        [
+          {
+            "node": "contacts_",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "contacts_": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent2",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "calendar_agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_event_solo": {
+      "ai_tool": [
+        [
+          {
+            "node": "calendar_agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update_event": {
+      "ai_tool": [
+        [
+          {
+            "node": "calendar_agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "suppress_event": {
+      "ai_tool": [
+        [
+          {
+            "node": "calendar_agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail": {
+      "ai_tool": [
+        [
+          {
+            "node": "calendar_agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set_intent1": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent2": {
+      "main": [
+        [
+          {
+            "node": "Set_intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "calendar_agent",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "correction_tool",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "check_feedback",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "AI Agent2",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "AI Agent3",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Telegram1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent3": {
+      "main": [
+        [
+          {
+            "node": "Set_intent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Classifier": {
+      "main": [
+        [
+          {
+            "node": "Google Generative AI",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "af2bb0ca-e47e-4018-9072-f736a9189d06",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5e09ebc4656d54727ee2da84c0a0008b813691b164526ab124d658b531945103"
+  },
+  "id": "XpxL1azIWoAaZL2c",
+  "tags": []
+}

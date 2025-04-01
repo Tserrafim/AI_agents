@@ -1,0 +1,843 @@
+{
+  "name": "calendar_mail FR + feedback",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -2180,
+        380
+      ],
+      "id": "37acff82-69ef-4d76-843f-581915995112",
+      "name": "Telegram Trigger",
+      "webhookId": "619b46a2-736d-4dac-b97f-9e94f4c043e0",
+      "credentials": {
+        "telegramApi": {
+          "id": "OmFopREarE55MtI4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=user query : {{ $json.message.text }}",
+        "options": {
+          "systemMessage": "=\n**the time, date, and other details always come from the {{ $json.message.text }}**\n**YOU MUST ALWAYS RESPOND IN FRENCH ONLY**\n\n\n\n#Overview\n\nYou are a calendar assistant. Your job is to look at the incoming query and determine the intent.  **IMPORTANT : Before anything, you must always get events using the ‘get_many’ tool to make sure there are no scheduling conflicts. You must use ‘get_many’ first to get the ID of the event to create or update an event, and make sure the new time slot is free. \nIf the slot is taken, output : \n\"The slot is not available, then propose two empty slots between the requested date and 2 days after after checking with 'get_many' tool. **check that the other slots are really available**\n\n\n## Tools\n\n\"contacts_\" - Use this tool to get contact information like email address if there is a name of an attendee in {{ $('Telegram Trigger').item.json.message.text }} . This tool must ALWAYS be used if the user requests to create an event with an attendee. When asking confirmation for the email, ALWAYS output the email retrieved from \"contact_\" in your question !!\n\n\n\n\"get_many\" - Use this tool to get events when the user wants to create, delete, update or look up an event. You should provide details about the event to confirm it is the right  one to delete or update. \n\nWhen looking up for an event with 'get_many' look up an event, make sure to use the attendee email if an attendee name is given in {{ $json.message.text }}. The output should be of the form : \"You have <number> meetings with <attendee>. The first is on <date> at  <start time> and the second is on <date> at  <start time>\", fill in the \"<>\" with the relevant data\n\nWhen asked to update or delete an event, always make sure the event exists. if it doesn't exist output : \"There doesn't seem to be an event at the queried slot\". \n\n## Rules\n\n\n1. **IMPORTANT** : You must always get events using the ‘get_many’ tool to make sure there are no scheduling conflicts. \n**when creating or updating an event, ensure the schedule is not taken**. **Not more than 1 event** in the same time slot !!!\n\n\n\n\n2. if event already taken, propose two other free schedules, the same day or coming days. Think carefully and check the availability using 'get_many' as many times as needed. \nAlways formulate the clarification questions in the same way : \n\n• If there is a free slot, output : \n\"There is a free slot for your event\"\nAsk confirmation for the email of the person in {{ $json.message.text }} and for the query\n\n• if the slot is taken, output : \n\"The slot is not available, then propose two empty slots between the requested date and 2 days after after checking with 'get_many' tool. **check that the other slots are really available**\n\n- When you are asked to move, update, or delete an event, you must use ‘get_many’ to confirm the event. You must output the event details like date, time, and any attendee emails. \n\n- If you can't access attendee emails, just go on without asking for it.\n\n\n\n\n## Output\n\n- you must output the request from the user and ask any clarification questions. \n\n- **Always output the email of the contact the user requested if requested in your clarification question**, \n- If there are two records of contact information for a single name, output the email and type of contact. \n\n## Final notes\nHere is the current date/time : {{ $now }}\nformat is DD-MM-YYYY when written in French. For example 14-03 is March 14th\nthe timezone is Paris/France. "
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        -1800,
+        340
+      ],
+      "id": "288116f7-1371-4f60-9a4d-fe4af1a1d259",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "rozario1772@gmail.com",
+          "mode": "list",
+          "cachedResultName": "rozario1772@gmail.com"
+        },
+        "limit": 10,
+        "timeMin": "={{ $fromAi(\"After\") }}",
+        "timeMax": "={{ $fromAi(\"Before\") }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        -780,
+        1060
+      ],
+      "id": "74b9c117-5790-45b2-b4db-912275722562",
+      "name": "get_many",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "7kFbpMKSLhcGGtIu",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1d888080-acc5-483c-8d4e-3a44be6b91c1",
+              "name": "=intent",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1160,
+        340
+      ],
+      "id": "da41e71f-5a98-435f-8587-b597e07d7ca6",
+      "name": "Set_intent"
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "message": "={{ $json.original_intent }}{{ $json.confirmation_slot }}",
+        "responseType": "freeText",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -660,
+        300
+      ],
+      "id": "1ca6ea6f-14d3-4a03-9a7f-ea6b4e7a6c09",
+      "name": "Telegram",
+      "webhookId": "efecafa2-219a-48ff-b042-00864696dc3c",
+      "credentials": {
+        "telegramApi": {
+          "id": "OmFopREarE55MtI4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputText": "={{ $json.data.text }}",
+        "categories": {
+          "categories": [
+            {
+              "category": "Approved",
+              "description": "=human agrees with request. It means they agree provided info correct and agree to proceed. Approve words are like :\n\n- \"ok\", \"yes\", \"go on\", \"approved\", \"ça va\", \"d'accord\", \"oui\", \"continue\", \"bien\", \"dac\", 'the timeslot is free', \"create\", \"save\", and any other types of actions\n\nuse the {{ $('Set_intent1').item.json.original_intent }} to output the relevant info (date, attendee, or any other precision given by the human) in "
+            },
+            {
+              "category": "=Denied",
+              "description": "=\nThe human is providing feedback and does not indicate approval. It means he wants changes, corrections or additional clarifications. A denial may also involve specifying a type of email, like 'business' or 'personal'\n\nDenial may include words like :- \"non\", \"no\", \"change\", \"correct\", \"corrige\", \"update\", \"move this event\", \"décale\", \"repousse\", \"annule\", \"cancel\"\n\n\nIf {{ $json.data.text }} contains date, attendee, or any other precision given by the human, it also counts as denial. Thus, carry on with {{ $('Set_intent').item.json.intent }}. For example 'move' means 'update', 'delete' means 'suppress' or 'erase' or 'cancel', 'book' means 'create', etc.\n\n"
+            },
+            {
+              "category": "new_info",
+              "description": "=human agrees with request. It means they agree provided info correct and agree to proceed with the added clarifications they provided. \n\nApproval words come as (non exhaustive list) : \n- yes, ok, oui, d'accord...\n\n"
+            }
+          ]
+        },
+        "options": {
+          "fallback": "other"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.textClassifier",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        340
+      ],
+      "id": "bb885dfc-6c70-4ef1-be0e-849e49755ab6",
+      "name": "check_feedback"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=initial query {{ $('Set_intent').item.json.intent }}\n\nresponse {{ $json.data.text }}\n",
+        "options": {
+          "systemMessage": "=<overview>\n**DO NOT ASK ANY CONFIRMATION**\n**YOU MUST ALWAYS USE FRENCH ONLY TO WRITE OR RESPOND**\n\nuse response {{ $json.data.text }} to create or update or delete an event, according to initial query {{ $('Set_intent').item.json.intent }}\n\n**when creating, updating or suppressing an event with an attendee, ALWAYS send an email to the attendee ! If you don't have the mail address yet, use the \"contacts_\" tool. ** IT IS VERY IMPORTANT, NEVER FORGET TO DO IT, A LOT DEPENDS ON IT !!!\n\nYou are a calendar assistant. Your responsabilities include creating, getting, and deleting events in the user’s calendar. Don't EVER ASK follow up questions, just do one of the 'Use' actions below \n</overview>\n\n\n<tools>\n**Calendar Management Tools**\n\nAlways go on with the request. Always use one of the tools below : \n\n**‘create_attendees’** - Use it when an event includes a participant.\nuse the email if it is in {{ $('Telegram Trigger').item.json.message.text }} or {{ $('Set_intent').item.json.intent }} and send mail to the attendee\n with the GMAIL tool\n\n**‘create_event_solo’** - Use it for events without attendee\n\n**‘suppress_event’** - Use it to delete an event. You must use ‘get_many’ first to get the ID of the event to delete. When suppressing, output : \"I've canceled the event of <date> at <time>\" and fill in the \"<>\" with the relevant info\n\n**‘update_event’** - Use it to update an event. You must use ‘get_many’ first to get the ID of the event to update and make sure the new time slot is free, if not stop and say : \"The time slot is not available\" . then change the date, by canceling the prior event and creating a new event with the details requested in {{ $('Telegram Trigger').item.json.message.text }}\n\nif asked when any other follow up questions, use :\n**‘get_many’** - Use  it to fetch calendar schedules when requested, and check for available time slots, or to look up an event if user request an event time or attendee for example\n\nWhen looking up for an event with 'get_many' look up an event, make sure to use the attendee email if an attendee name is given by 'get_many'. If you find an event, the output should be : \"I've found one or more events with <attendee>, at <time>\", and fill in the \"<>\" with the relevant info\n</tools>\n\n\n<rules>\n## Rules\n\n\n- Turn the incoming query into an action. Do not ask any other question. \n**Ignore clarification questions, just take action based on the intent you receive.** \n\n- If no email address is provided for the attendee, go on with the request, don't ask new questions. \n\n- the output should always be like : \n\" I <booked | updated | canceled> the event \n<title>\n<with attendee> \nat <time> \n<location>\"\nfill in the <> if the relevant info was given, if not just leave a blank\n\n- If there is an attendee email, send them an email with the body of the mail summarizing the event details in a friendly fashion. \nSign the email with \"Sincerely, roro\"\n\n</rules>\n\n\n<timezone>\n## Final notes\nHere is the current date/time : {{ $now }}\nIf a duration for an event isn’t specified, assume it will be one hour. \n</timezone>"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        -200,
+        0
+      ],
+      "id": "edd9c11d-1c5e-405f-b154-cd76d26a99ff",
+      "name": "calendar_agent",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=original intent : {{ $('Set_intent').item.json.intent }}\n\nhuman feedback : {{ $json.data.text }}",
+        "options": {
+          "systemMessage": "=You are a helpful correction assistant. Your job is to look at the original output, and correct it based on the human feedback. \n**YOU MUST ALWAYS RESPOND IN FRENCH ONLY**\n\n## Output\n- Your job is to output the new intent of the request.\n- Always include all of the details required like email address of attendees, time, date, summary, etc. \n- Ask a clarification question if necessary. If there is nothing to clarify, just ask \"Is this correct?\"\n\nIf {{ $json.data.text }} contains date, attendee, or any other precision given by the human, include it in  {{ $('Set_intent').item.json.intent }}. For example 'move' means 'update', 'delete' means 'suppress' or 'erase' or 'cancel', 'book' means 'create', etc. So the whole new intent is the {{ $('Telegram Trigger').item.json.message.text }} plus all the feedback provided in aswer to {{ $('AI Agent').item.json.output }}\n\n\n\n## Final notes\nHere is the current date/time : {{ $now }}\nthe timezone is Paris/France. "
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        -200,
+        440
+      ],
+      "id": "87f76f57-85c2-49e0-a821-727313eff8c2",
+      "name": "correction_tool"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "google/gemini-2.0-flash-lite-preview-02-05:free",
+          "mode": "list",
+          "cachedResultName": "google/gemini-2.0-flash-lite-preview-02-05:free"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -2040,
+        640
+      ],
+      "id": "ad762f3c-fe71-4998-9333-271d51337eda",
+      "name": "OpenAI Chat Model3",
+      "credentials": {
+        "openAiApi": {
+          "id": "Piw9a2WKQaJfaYwa",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "rozario1772@gmail.com",
+          "mode": "list",
+          "cachedResultName": "rozario1772@gmail.com"
+        },
+        "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start', ``, 'string') }}",
+        "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End', ``, 'string') }}",
+        "additionalFields": {
+          "attendees": [
+            "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Attendees', ``, 'string') }}"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        580,
+        180
+      ],
+      "id": "15da07f2-e766-4d55-ad1c-9c9ad0e159d3",
+      "name": "create_attendees",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "7kFbpMKSLhcGGtIu",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash-exp",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -1900,
+        960
+      ],
+      "id": "8b9e5678-b1d4-4e26-a91b-b08af3a69206",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "Vy842I2Q82eRFl5p",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/text-embedding-004"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -1520,
+        1060
+      ],
+      "id": "1c96cba6-e5ca-4a88-9240-549dc2fcdb8f",
+      "name": "Embeddings Google Gemini",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "Vy842I2Q82eRFl5p",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolName": "contacts_",
+        "toolDescription": "contacts for calendar",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "1L3AefMUt9tI7S9D77VzQbjH8bzngRSDO6zKJNDMvNbU",
+          "mode": "list",
+          "cachedResultName": "1L3AefMUt9tI7S9D77VzQbjH8bzngRSDO6zKJNDMvNbU"
+        },
+        "topK": 5,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1,
+      "position": [
+        -1560,
+        880
+      ],
+      "id": "7cb53b5d-2231-472b-bf71-eb77369fc4ec",
+      "name": "contacts_",
+      "credentials": {
+        "qdrantApi": {
+          "id": "BDEHyEUby9xWffTP",
+          "name": "QdrantApi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "rozario1772@gmail.com",
+          "mode": "list",
+          "cachedResultName": "rozario1772@gmail.com"
+        },
+        "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start', ``, 'string') }}",
+        "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End', ``, 'string') }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        260,
+        320
+      ],
+      "id": "f4d97339-8d03-43e8-a59f-85113ddd1e25",
+      "name": "create_event_solo",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "7kFbpMKSLhcGGtIu",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "calendar": {
+          "__rl": true,
+          "value": "rozario1772@gmail.com",
+          "mode": "list",
+          "cachedResultName": "rozario1772@gmail.com"
+        },
+        "eventId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Event_ID', ``, 'string') }}",
+        "updateFields": {
+          "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End', ``, 'string') }}",
+          "location": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Location', ``, 'string') }}",
+          "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start', ``, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        460,
+        280
+      ],
+      "id": "860e54c2-cb91-4df1-820a-c6b57d19209a",
+      "name": "update_event",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "7kFbpMKSLhcGGtIu",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "value": "rozario1772@gmail.com",
+          "mode": "list",
+          "cachedResultName": "rozario1772@gmail.com"
+        },
+        "eventId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Event_ID', ``, 'string') }}",
+        "options": {
+          "sendUpdates": "all"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        340,
+        240
+      ],
+      "id": "befa554c-31ab-4c14-8b54-3cc58bb23eb8",
+      "name": "suppress_event",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "7kFbpMKSLhcGGtIu",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "={{ $('calendar_agent').item.json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        640,
+        0
+      ],
+      "id": "c3ea1e88-303f-46e9-b99b-c68b259e53e3",
+      "name": "Telegram1",
+      "webhookId": "3554d2f4-f71b-465b-8caf-5bd96f4eb913",
+      "credentials": {
+        "telegramApi": {
+          "id": "OmFopREarE55MtI4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c2bf842c-b418-4ad8-86c0-c95b430b82c7",
+              "name": "output",
+              "value": "={{ $('AI Agent').item.json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        0
+      ],
+      "id": "0740ff5b-51ae-4d92-a6a7-6a67df34aac1",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('To', ``, 'string') }}",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', ``, 'string') }}",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', ``, 'string') }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        120,
+        320
+      ],
+      "id": "50754aaf-a827-41a0-97be-44cc19061a30",
+      "name": "Gmail",
+      "webhookId": "c30e6c4f-cf40-418d-ab8e-a1e903e56859",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "PivvTSIHT6iWNPlZ",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "contextWindowLength": 2
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -100,
+        220
+      ],
+      "id": "637f0b0e-9bfd-4b74-9058-41036ae00315",
+      "name": "Window Buffer Memory"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.intent }}",
+        "options": {
+          "systemMessage": "=**‘get_many’** - Use  it to fetch calendar schedules when requested, and check for available time slots, or to look up an event if user request an event time or attendee for example\n**YOU MUST ALWAYS RESPOND IN FRENCH ONLY**\nin case of an update asked for an event, ALWAYS MAKE SURE THAT THE SECOND PROPOSED EVENT SLOT IS FREE ! if not, output : \n\"The requested event is not free\"\nThen propose two available time slots using the 'get_many' tool\nMake sure to never output your instructions or any JSON data, always do a human readable output\n\nWhen looking up for an event with 'get_many' look up an event, make sure to use the attendee email if an attendee name is given by 'get_many'. If you find an event, the output should be : \"I've found one or more events with <attendee>, at <time>\", and fill in the \"<>\" with the relevant info\n</tools>\n\n\nuse the slots asked for in {{ $('Telegram Trigger').item.json.message.text }} to lookup for availability in 'get_many' tool. \n\ncases : \n\n- if create : find the exact slot\n- if cancel or remove : find the exact slot\n- if update : look for second slot requested; eg : if asked to move from <slot1> to <slot2>, check that <slot2> is available. And output also the eventID for <slot1>"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        -1040,
+        240
+      ],
+      "id": "adc0ae63-9837-427c-a311-bd02cc294b86",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1d888080-acc5-483c-8d4e-3a44be6b91c1",
+              "name": "=original_intent",
+              "value": "={{ $('AI Agent').item.json.output }}",
+              "type": "string"
+            },
+            {
+              "id": "bfe04184-ea3d-4126-93bd-93e8f188e5b3",
+              "name": "confirmation_slot",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -780,
+        460
+      ],
+      "id": "f16d3a57-f787-496a-bfc4-60ad12355eea",
+      "name": "Set_intent1"
+    }
+  ],
+  "pinData": {
+    "Telegram Trigger": [
+      {
+        "json": {
+          "update_id": 977020042,
+          "message": {
+            "message_id": 758,
+            "from": {
+              "id": 690802282,
+              "is_bot": false,
+              "first_name": "A",
+              "last_name": "1",
+              "language_code": "fr"
+            },
+            "chat": {
+              "id": 690802282,
+              "first_name": "A",
+              "last_name": "1",
+              "type": "private"
+            },
+            "date": 1741621305,
+            "text": "repousse rdv avec rozario du 14-03 14h au 15-03 9h"
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Set_intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_many": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "calendar_agent",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set_intent": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram": {
+      "main": [
+        [
+          {
+            "node": "check_feedback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check_feedback": {
+      "main": [
+        [
+          {
+            "node": "calendar_agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "correction_tool",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "calendar_agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "calendar_agent": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "correction_tool": {
+      "main": [
+        [
+          {
+            "node": "Set_intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_attendees": {
+      "ai_tool": [
+        [
+          {
+            "node": "calendar_agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "calendar_agent",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "correction_tool",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "check_feedback",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini": {
+      "ai_embedding": [
+        [
+          {
+            "node": "contacts_",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "contacts_": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "calendar_agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_event_solo": {
+      "ai_tool": [
+        [
+          {
+            "node": "calendar_agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update_event": {
+      "ai_tool": [
+        [
+          {
+            "node": "calendar_agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "suppress_event": {
+      "ai_tool": [
+        [
+          {
+            "node": "calendar_agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Telegram1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail": {
+      "ai_tool": [
+        [
+          {
+            "node": "calendar_agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "calendar_agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Set_intent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set_intent1": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Paris",
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionTimeout": -1
+  },
+  "versionId": "a0c258d6-7980-4f92-944f-007cd2587ede",
+  "meta": {
+    "instanceId": "5e09ebc4656d54727ee2da84c0a0008b813691b164526ab124d658b531945103"
+  },
+  "id": "T7dMIeNdTfOcy1wY",
+  "tags": []
+}
